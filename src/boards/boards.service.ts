@@ -1,12 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { BoardStatus } from './board-status.enum';
-import { v1 as uuid } from 'uuid';
 import { CreateBoardDto } from './dto/create-board.dto';
-import { create } from 'domain';
 import { BoardRepository } from './boards.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Board } from './board.entity';
-import { Repository } from 'typeorm';
+import { User } from 'src/auth/user.entity';
 
 @Injectable()
 export class BoardsService {
@@ -15,16 +13,24 @@ export class BoardsService {
         private boardRepository: BoardRepository,
     ) {}
 
-    getAllBoards(): Promise<Board[]> {
-        return this.boardRepository.find();
+    async getAllBoards(user: User): Promise<Board[]> {
+        const query = this.boardRepository.createQueryBuilder('board');
+
+        query.where('board.userId = :userId', { userId: user.id });
+
+        const boards = await query.getMany();
+        return boards;
     }
     // getAllBoards(): Board[] {
     //     return this.boards;
     // }
 
 
-    async createBoard(createBoardDto: CreateBoardDto): Promise<Board> {
-        return await this.boardRepository.createBoard(createBoardDto);
+    async createBoard(
+        createBoardDto: CreateBoardDto,
+        user: User
+    ): Promise<Board> {
+        return await this.boardRepository.createBoard(createBoardDto, user);
     }
     // createBoard(createBoardDto: CreateBoardDto) {
     //     const {title, description} = createBoardDto;
@@ -57,10 +63,12 @@ export class BoardsService {
     //     return found;
     // }
 
-    async deleteBoard(id: number): Promise<void> {
-        //remove()와 달리 delete()는 아이템이 반드시 존재하지 않더라도 영향 없음
+    async deleteBoard(id: number, user: User): Promise<void> {
+        const result = await this.boardRepository.delete({id, user});
 
-        await this.boardRepository.delete(id);
+        if (result.affected === 0) {
+            throw new NotFoundException(`Can't find Board with id ${id}`)
+        }
     }
     // deleteBoard(id: string): void {
     //     const found = this.getBoardById(id);
