@@ -1,14 +1,13 @@
-import { ArgumentMetadata, BadRequestException, NotFoundException, PipeTransform } from "@nestjs/common";
-import { NotFoundError } from "rxjs";
-import { BoardStatus } from "../board.model";
+import { BadRequestException, PipeTransform } from "@nestjs/common";
+import { BoardStatus } from "../board-status.enum";
 
 export class BoardStatusValidationPipe implements PipeTransform {
     readonly StatusOptions = [
-        BoardStatus.PULBIC,
+        BoardStatus.PUBLIC,
         BoardStatus.PRIVATE
     ]
     
-    transform(value: any) {
+    transform(value: string) {
         value = value.toUpperCase();
 
         if (!this.isStatusValid(value)) {
